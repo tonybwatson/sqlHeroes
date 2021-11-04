@@ -40,6 +40,20 @@ function createAbility(
     }
 }
 
+function assignHeroAbility(
+    $hero_id, $ability_id
+    ) {
+    $sql = "INSERT INTO abilities (hero_id, ability_id)
+    VALUES('$hero_id', '$ability_id')";
+    global $conn;
+
+    if($conn->query($sql) === TRUE) {
+        echo "New Hero Ability set!";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+}
+
 // READ
 function readAllHeroes()
 {
@@ -102,6 +116,38 @@ function getAll()
     }
 }
 
+function showConnections()
+{
+    $sql = "SELECT 
+    main_hero_name as name, 
+    GROUP_CONCAT(DISTINCT name SEPARATOR ', ') as connections    
+    FROM relationships 
+    INNER JOIN 
+    (SELECT 
+        heroes.name as main_hero_name, 
+        heroes.id as main_hero_id, 
+        relationships.hero2_id as second_hero_id, 
+        relationships.type_id as relationship_type_id 
+    FROM 
+    (heroes 
+    INNER JOIN relationships on relationships.hero1_id = heroes.id) ) connections 
+    ON connections.second_hero_id = relationships.hero2_id 
+    INNER JOIN heroes 
+    ON heroes.id = connections.second_hero_id 
+    GROUP BY main_hero_name";
+    global $conn;
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        // output data of each row
+        while ($row = $result->fetch_assoc()) {
+            print_r($row);
+        }
+    } else {
+        print_r($conn->errors);
+    }
+}
+
 // UPDATE
 function updateHero($id, $name, $about_me, $biography)
 {
@@ -117,8 +163,18 @@ function updateHero($id, $name, $about_me, $biography)
     $conn->close();
 }
 
-function addHeroAbility() {
-    
+function updateAbility($id, $ability)
+{
+    $sql = "UPDATE ability_type SET ability='$ability'
+    WHERE id='$id'";
+    global $conn;
+
+    if ($conn->query($sql) === TRUE) {
+        echo "Ability updated successfully";
+    } else {
+        echo "Error updating Ability: " . $conn->error;
+    }
+    $conn->close();
 }
 
 // DELETE
@@ -163,6 +219,12 @@ if ($action != "") {
                 $_POST["ability"]
             );
             break;
+        case "assignheroability":
+            assignHeroAbility(
+                $_POST["hero_id"],
+                $_POST["ability_id"]
+            );
+            break;
         case "read":
             readAllHeroes();
             break;
@@ -175,6 +237,12 @@ if ($action != "") {
                 $_POST["name"],
                 $_POST["about_me"],
                 $_POST["biography"]
+            );
+            break;
+        case "updateability":
+            updateAbility(
+                $_POST["id"],
+                $_POST["ability"]
             );
             break;
         case "delete":
@@ -190,7 +258,12 @@ if ($action != "") {
         case "getall":
             getAll();
             break;
+        case "showconnections":
+            showConnections();
+            break;
         default:
             return;
     }
 }
+
+$conn->close();
