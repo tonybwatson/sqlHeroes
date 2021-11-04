@@ -5,13 +5,12 @@ $password = "";
 $dbname = "hero_database";
 
 // Create connection
+
 $conn = new mysqli($servername, $username, $password, $dbname);
 // Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
-
-
 
 // CREATE 
 function createHero($name, $about_me, $biography)
@@ -27,10 +26,11 @@ function createHero($name, $about_me, $biography)
     }
 }
 
-function createability_type($ability_type, $ability)
-{
+function createAbility(
+    $ability
+) {
     $sql = "INSERT INTO ability_type (ability)
-    VALUES ('$ability_type', '$ability')";
+    VALUES ('$ability')";
     global $conn;
 
     if ($conn->query($sql) === TRUE) {
@@ -47,7 +47,6 @@ function readAllHeroes()
     global $conn;
     $result = $conn->query($sql);
 
-
     if ($result->num_rows > 0) {
         // output data of each row
         while ($row = $result->fetch_assoc()) {
@@ -55,18 +54,15 @@ function readAllHeroes()
                 . $row['id'] . " - Name: "
                 . $row['name'] . "<br>"
                 . $row['about_me'] .  "<br>"
-                . $row['biography'] . "<br>"
-                // . $row['ability_type']
-            ;
+                . $row['biography'] . "<br>";
         }
     } else {
         echo "0 results";
     }
 }
 
-function readAllability_type()
+function readAbilities()
 {
-    echo "<h2>ability_type</h2><pre>";
     $sql = "SELECT * FROM ability_type";
     global $conn;
     $result = $conn->query($sql);
@@ -75,9 +71,8 @@ function readAllability_type()
         // output data of each row
         while ($row = $result->fetch_assoc()) {
             echo "id: "
-                . $row['id'] . " - ability_type: "
-                . $row['ability_type'] . "<br>"
-                . $row['$ability'] . "<br>";
+                . $row['id'] . " - ability: "
+                . $row['ability'] . "<br>";
         }
     } else {
         echo "0 results";
@@ -110,37 +105,50 @@ function getAll()
 // UPDATE
 function updateHero($id, $name, $about_me, $biography)
 {
-
     $sql = "UPDATE heroes SET about_me='$about_me', name='$name', biography='$biography'  
     WHERE id='$id'";
     global $conn;
 
     if ($conn->query($sql) === TRUE) {
-        echo "Record updated successfully";
+        echo "Hero updated successfully";
     } else {
-        echo "Error updating record: " . $conn->error;
+        echo "Error updating Hero: " . $conn->error;
     }
     $conn->close();
+}
+
+function addHeroAbility() {
+    
 }
 
 // DELETE
 function deleteHero($id)
 {
 
-    // sql to delete a record
     $sql = "DELETE FROM heroes WHERE id='$id'";
     global $conn;
 
     if ($conn->query($sql) === TRUE) {
-        echo "Record deleted successfully";
+        echo "Hero deleted successfully";
     } else {
-        echo "Error deleting record: " . $conn->error;
+        echo "Error deleting Hero: " . $conn->error;
+    }
+}
+
+function deleteAbility($id)
+{
+    $sql = "DELETE FROM ability_type WHERE id='$id'";
+    global $conn;
+
+    if ($conn->query($sql) === TRUE) {
+        echo "Ability deleted successfully";
+    } else {
+        echo "Error deleting Ability: " . $conn->error;
     }
 }
 
 $action = $_GET["action"];
 
-// echo "<pre" . print_r($action, 1) . "</pre>";
 if ($action != "") {
     switch ($action) {
         case "create":
@@ -150,14 +158,16 @@ if ($action != "") {
                 $_POST["biography"]
             );
             break;
-        case "ability_type":
-            createability_type(
-                $_GET["ability_type"],
-                $_GET["ability"]
+        case "createability":
+            createAbility(
+                $_POST["ability"]
             );
             break;
         case "read":
             readAllHeroes();
+            break;
+        case "readabilities":
+            readAbilities();
             break;
         case "update":
             updateHero(
@@ -172,12 +182,15 @@ if ($action != "") {
                 $_GET["id"]
             );
             break;
+        case "deleteability":
+            deleteAbility(
+                $_GET["id"]
+            );
+            break;
         case "getall":
             getAll();
             break;
         default:
             return;
     }
-
-    // readAllability_type($conn);
 }
