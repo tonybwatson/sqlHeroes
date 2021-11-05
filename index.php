@@ -27,10 +27,10 @@ function createHero($name, $about_me, $biography)
 }
 
 function createAbility(
-    $ability
+    $name
 ) {
-    $sql = "INSERT INTO ability_type (ability)
-    VALUES ('$ability')";
+    $sql = "INSERT INTO ability_types (name)
+    VALUES ('$name')";
     global $conn;
 
     if ($conn->query($sql) === TRUE) {
@@ -41,13 +41,14 @@ function createAbility(
 }
 
 function assignHeroAbility(
-    $hero_id, $ability_id
-    ) {
+    $hero_id,
+    $ability_id
+) {
     $sql = "INSERT INTO abilities (hero_id, ability_id)
     VALUES('$hero_id', '$ability_id')";
     global $conn;
 
-    if($conn->query($sql) === TRUE) {
+    if ($conn->query($sql) === TRUE) {
         echo "New Hero Ability set!";
     } else {
         echo "Error: " . $sql . "<br>" . $conn->error;
@@ -77,7 +78,7 @@ function readAllHeroes()
 
 function readAbilities()
 {
-    $sql = "SELECT * FROM ability_type";
+    $sql = "SELECT * FROM ability_types";
     global $conn;
     $result = $conn->query($sql);
 
@@ -86,7 +87,7 @@ function readAbilities()
         while ($row = $result->fetch_assoc()) {
             echo "id: "
                 . $row['id'] . " - ability: "
-                . $row['ability'] . "<br>";
+                . $row['name'] . "<br>";
         }
     } else {
         echo "0 results";
@@ -98,10 +99,10 @@ function getAll()
     $sql = "SELECT 
     heroes.name, 
     heroes.about_me, 
-    GROUP_CONCAT(ability_type.ability separator ', ') ability_type
+    GROUP_CONCAT(ability_types.name separator ', ') ability_types
     FROM ((heroes
     INNER JOIN abilities on heroes.id = abilities.hero_id)
-    INNER JOIN ability_type ON abilities.ability_id = ability_type.id)
+    INNER JOIN ability_types ON abilities.ability_type_id = ability_types.id)
     GROUP BY heroes.name, heroes.about_me";
     global $conn;
     $result = $conn->query($sql);
@@ -118,23 +119,36 @@ function getAll()
 
 function showConnections()
 {
-    $sql = "SELECT 
-    main_hero_name as name, 
-    GROUP_CONCAT(DISTINCT name SEPARATOR ', ') as connections    
-    FROM relationships 
-    INNER JOIN 
-    (SELECT 
-        heroes.name as main_hero_name, 
-        heroes.id as main_hero_id, 
-        relationships.hero2_id as second_hero_id, 
-        relationships.type_id as relationship_type_id 
-    FROM 
-    (heroes 
-    INNER JOIN relationships on relationships.hero1_id = heroes.id) ) connections 
-    ON connections.second_hero_id = relationships.hero2_id 
-    INNER JOIN heroes 
-    ON heroes.id = connections.second_hero_id 
-    GROUP BY main_hero_name";
+    $sql = "SELECT
+    main_hero_name as name,
+    GROUP_CONCAT(DISTINCT
+                 CASE
+                 	WHEN type_id = 1
+                 	THEN name
+                 	ELSE NULL
+                 END
+                 SEPARATOR ', ') AS friends,
+    GROUP_CONCAT(DISTINCT
+                 CASE
+                 	WHEN type_id = 2
+                 	THEN name
+                 	ELSE NULL
+                 END
+                 SEPARATOR ', ') AS enemies
+    FROM relationships
+    INNER JOIN
+    (SELECT
+        heroes.name as main_hero_name,
+        heroes.id as main_hero_id,
+        relationships.hero2_id as second_hero_id,
+        relationships.relationship_type_id as type_id
+    FROM
+    (heroes
+    INNER JOIN relationships on relationships.hero1_id = heroes.id) ) connections
+    ON connections.second_hero_id = relationships.hero2_id
+    INNER JOIN heroes
+    ON heroes.id = connections.second_hero_id
+   GROUP BY main_hero_name, type_id";
     global $conn;
     $result = $conn->query($sql);
 
@@ -163,9 +177,9 @@ function updateHero($id, $name, $about_me, $biography)
     $conn->close();
 }
 
-function updateAbility($id, $ability)
+function updateAbility($id, $name)
 {
-    $sql = "UPDATE ability_type SET ability='$ability'
+    $sql = "UPDATE ability_types SET name='$name'
     WHERE id='$id'";
     global $conn;
 
@@ -193,7 +207,7 @@ function deleteHero($id)
 
 function deleteAbility($id)
 {
-    $sql = "DELETE FROM ability_type WHERE id='$id'";
+    $sql = "DELETE FROM ability_types WHERE id='$id'";
     global $conn;
 
     if ($conn->query($sql) === TRUE) {
@@ -242,7 +256,7 @@ if ($action != "") {
         case "updateability":
             updateAbility(
                 $_POST["id"],
-                $_POST["ability"]
+                $_POST["name"]
             );
             break;
         case "delete":
