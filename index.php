@@ -42,10 +42,10 @@ function createAbility(
 
 function assignHeroAbility(
     $hero_id,
-    $ability_id
+    $ability_type_id
 ) {
-    $sql = "INSERT INTO abilities (hero_id, ability_id)
-    VALUES('$hero_id', '$ability_id')";
+    $sql = "INSERT INTO abilities (hero_id, ability_type_id)
+    VALUES('$hero_id', '$ability_type_id')";
     global $conn;
 
     if ($conn->query($sql) === TRUE) {
@@ -162,6 +162,82 @@ function showConnections()
     }
 }
 
+function showAllFriends()
+{
+    $sql = "SELECT
+    main_hero_name as name,
+    GROUP_CONCAT(DISTINCT
+                 CASE
+                 	WHEN type_id = 1
+                 	THEN name
+                 	ELSE NULL
+                 END
+                 SEPARATOR ', ') AS friends
+    FROM relationships
+    INNER JOIN
+    (SELECT
+        heroes.name as main_hero_name,
+        heroes.id as main_hero_id,
+        relationships.hero2_id as second_hero_id,
+        relationships.relationship_type_id as type_id
+    FROM
+    (heroes
+    INNER JOIN relationships on relationships.hero1_id = heroes.id) ) connections
+    ON connections.second_hero_id = relationships.hero2_id
+    INNER JOIN heroes
+    ON heroes.id = connections.second_hero_id
+   GROUP BY main_hero_name, type_id";
+    global $conn;
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        // output data of each row
+        while ($row = $result->fetch_assoc()) {
+            print_r($row);
+        }
+    } else {
+        print_r($conn->errors);
+    }
+}
+
+function showAllEnemies()
+{
+    $sql = "SELECT
+    main_hero_name as name,
+    GROUP_CONCAT(DISTINCT
+                 CASE
+                 	WHEN type_id = 2
+                 	THEN name
+                 	ELSE NULL
+                 END
+                 SEPARATOR ', ') AS enemies
+    FROM relationships
+    INNER JOIN
+    (SELECT
+        heroes.name as main_hero_name,
+        heroes.id as main_hero_id,
+        relationships.hero2_id as second_hero_id,
+        relationships.relationship_type_id as type_id
+    FROM
+    (heroes
+    INNER JOIN relationships on relationships.hero1_id = heroes.id) ) connections
+    ON connections.second_hero_id = relationships.hero2_id
+    INNER JOIN heroes
+    ON heroes.id = connections.second_hero_id
+   GROUP BY main_hero_name, type_id";
+    global $conn;
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        // output data of each row
+        while ($row = $result->fetch_assoc()) {
+            print_r($row);
+        }
+    } else {
+        print_r($conn->errors);
+    }
+}
+
 // UPDATE
 function updateHero($id, $name, $about_me, $biography)
 {
@@ -217,11 +293,11 @@ function deleteAbility($id)
     }
 }
 
-$action = $_GET["action"];
-
-if ($action != "") {
-    switch ($action) {
-        case "create":
+$route = $_GET["route"];
+if ($route != "") {
+    switch ($route) {
+            // CREATE
+        case "createhero":
             createHero(
                 $_POST["name"],
                 $_POST["about_me"],
@@ -239,13 +315,27 @@ if ($action != "") {
                 $_POST["ability_id"]
             );
             break;
-        case "read":
+            // READ
+        case "readallheroes":
             readAllHeroes();
             break;
         case "readabilities":
             readAbilities();
             break;
-        case "update":
+        case "showconnections":
+            showConnections();
+            break;
+        case "showallfriends":
+            showAllFriends();
+            break;
+        case "showallenemies";
+            showAllEnemies();
+            break;
+        case "getall":
+            getAll();
+            break;
+            // UPDATE
+        case "updatehero":
             updateHero(
                 $_POST["id"],
                 $_POST["name"],
@@ -259,7 +349,8 @@ if ($action != "") {
                 $_POST["name"]
             );
             break;
-        case "delete":
+            // DELETE
+        case "deletehero":
             deleteHero(
                 $_GET["id"]
             );
@@ -269,15 +360,10 @@ if ($action != "") {
                 $_GET["id"]
             );
             break;
-        case "getall":
-            getAll();
-            break;
-        case "showconnections":
-            showConnections();
-            break;
         default:
-            return;
+        echo 'Error 404, action not found!';
+            break;
     }
-}
+} 
 
 $conn->close();
